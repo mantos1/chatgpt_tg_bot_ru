@@ -42,4 +42,5 @@
 ## Ссылки
 
 1. [*Сборка ChatGPT из GPT-3*](https://learnprompting.org/docs/applied_prompting/build_chatgpt)
+2. Описание переведено с помощью www.DeepL.com/Translator (бесплатная версия)
 
