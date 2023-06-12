@@ -34,25 +34,6 @@
 
 ---
 
-## News
-- *21 Apr 2023*:
-    - DALLE 2 support
-    - Group Chat support (/help_group_chat to get instructions)
-    - 10 new hot chat modes and updated chat mode menu with pagination: 🇬🇧 English Tutor, 🧠 Psychologist, 🚀 Elon Musk, 📊 SQL Assistant and other.
-- *24 Mar 2023*: GPT-4 support. Run `/settings` command to choose model
-- *15 Mar 2023*: Added message streaming. Now you don't have to wait until the whole message is ready, it's streamed to Telegram part-by-part (watch demo)
-- *9 Mar 2023*: Now you can easily create your own Chat Modes by editing `config/chat_modes.yml`
-- *8 Mar 2023*: Added voice message recognition with [OpenAI Whisper API](https://openai.com/blog/introducing-chatgpt-and-whisper-apis). Record a voice message and ChatGPT will answer you!
-- *2 Mar 2023*: Added support of [ChatGPT API](https://platform.openai.com/docs/guides/chat/introduction). It's enabled by default and can be disabled with `use_chatgpt_api` option in config. Don't forget to **rebuild** you docker image (`--build`).
-
-## Команды бота
-- `/retry` - перегенерация последнего ответа бота
-- `/new` - Начать новый диалог
-- `/mode` - Выбрать режим чата
-- `/balance` - Показать баланс
-- `/settings` - Показать настройки
-- `/help` - Показать помощь
-
 ## Установка
 
 1. Получите ключ [OpenAI API](https://openai.com/api/).
@@ -74,5 +55,3 @@
 
 1. [*Сборка ChatGPT из GPT-3*](https://learnprompting.org/docs/applied_prompting/build_chatgpt)
 
-
-Переведено с помощью www.DeepL.com/Translator (бесплатная версия)
