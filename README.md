@@ -36,19 +36,7 @@
 
 ## Установка
 
-1. Получите ключ [OpenAI API](https://openai.com/api/).
-
-2. Получите токен бота Telegram от [@BotFather](https://t.me/BotFather).
-
-3. Отредактируйте `config/config.example.yml` для установки токенов и выполните 2 команды ниже (*если вы продвинутый пользователь, вы также можете отредактировать* `config/config.example.env`):
-    ``bash
-    mv config/config.example.yml config/config.yml
-    mv config/config.example.env config/config.env
-    ```
-
-4. 🔥 А теперь **запустите**:
-    ``bash
-    docker-compose --env-file config/config.env up --build
+1. Понятная инструкция на русском языке по ссылке https://openode.ru/topic/352-sozdaem-bota-chatgpt-v-telegram-podrobnaya-instruktsiya/?_rid=86
 
     
 ## Ссылки
