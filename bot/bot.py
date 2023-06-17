@@ -325,8 +325,8 @@ async def is_previous_message_not_answered_yet(update: Update, context: Callback
 
     user_id = update.message.from_user.id
     if user_semaphores[user_id].locked():
-        text = "⏳ Пожалуйста <b>подождите</b> для ответа на предыдущее сообщение\n"
-        text += "Или вы модете отменить это командой /cancel"
+        text = "⏳ Пожалуйста, <b>дождитесь</b> ответа на предыдущее сообщение.\n"
+        text += "Или вы можете отменить это командой /cancel"
         await update.message.reply_text(text, reply_to_message_id=update.message.id, parse_mode=ParseMode.HTML)
         return True
     else:
@@ -387,7 +387,7 @@ async def generate_image_handle(update: Update, context: CallbackContext, messag
     try:
         image_urls = await openai_utils.generate_images(message, n_images=config.return_n_generated_images)
     except openai.error.InvalidRequestError as e:
-        if str(e).startswith("Ваш запрос был отклонен в результате работы нашей системы безопасности"):
+        if str(e).startswith("Ваш запрос был отклонен в результате работы нашей системы безопасности."):
             text = "🥲 Ваш запрос <b>не соответствует</b> политике использования OpenAI.\n Что ты там написал, а?"
             await update.message.reply_text(text, parse_mode=ParseMode.HTML)
             return
@@ -623,7 +623,7 @@ async def show_balance_handle(update: Update, context: CallbackContext):
 
 async def edited_message_handle(update: Update, context: CallbackContext):
     if update.edited_message.chat.type == "private":
-        text = "🥲 Unfortunately, message <b>editing</b> is not supported"
+        text = "🥲 К сожалению, <b>редактирование</b> сообщений не поддерживается."
         await update.edited_message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
