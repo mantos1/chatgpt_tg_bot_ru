@@ -50,9 +50,12 @@ HELP_MESSAGE = """Команды:
 ⚪ /balance – Баланс
 ⚪ /help – Помощь
 
-🎨 Генерируйте изображения на основе текстовых подсказок в роли <b>👩‍🎨 Художника</b>, команда /mode
-👥 Добавьте бота в <b>групповой чат</b>: /help_group_chat
+🎨 Генерируйте изображения на основе текстовых подсказок в роли  <b>👩‍🎨 Художника</b>, команда /mode
+👥 Добавьте бота в <b>групповой чат</b>: /help_group_chat 
+
 🎤 Вы можете отправить <b>голосовое соообщение</b> вместо текста
+
+⚠️ Перевод, поддержка, обсуждение: https://openode.ru
 """
 
 HELP_GROUP_CHAT_MESSAGE = """Вы можете добавить бота в любой <b>групповой чат</b>, чтобы помочь и развлечь его участников!
@@ -212,7 +215,7 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
         if use_new_dialog_timeout:
             if (datetime.now() - db.get_user_attribute(user_id, "last_interaction")).seconds > config.new_dialog_timeout and len(db.get_dialog_messages(user_id)) > 0:
                 db.start_new_dialog(user_id)
-                await update.message.reply_text(f"Запуск нового диалога из-за тайм-аута (<b>{config.chat_modes[chat_mode]['name']}</b> режим) ✅", parse_mode=ParseMode.HTML)
+                await update.message.reply_text(f"Запуск нового диалога из-за тайм-аута. Выбранная роль: (<b>{config.chat_modes[chat_mode]['name']}</b>) ✅", parse_mode=ParseMode.HTML)
         db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
         # in case of CancelledError
@@ -289,7 +292,7 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
             raise
 
         except Exception as e:
-            error_text = f"Что-то пошло не так во время завершения. Причина: {e}"
+            error_text = f"Ой-ой-ой, что-то пошло совсем не так во время последнего запроса. \n \n Причина: \n \n {e}"
             logger.error(error_text)
             await update.message.reply_text(error_text)
             return
@@ -633,7 +636,7 @@ async def error_handle(update: Update, context: CallbackContext) -> None:
         tb_string = "".join(tb_list)
         update_str = update.to_dict() if isinstance(update, Update) else str(update)
         message = (
-            f"An exception was raised while handling an update\n"
+            f"При обработке обновления возникло исключение\n"
             f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
             "</pre>\n\n"
             f"<pre>{html.escape(tb_string)}</pre>"
