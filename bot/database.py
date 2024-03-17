@@ -28,6 +28,7 @@ class Database:
         self,
         user_id: int,
         chat_id: int,
+        n_available_tokens: int,
         username: str = "",
         first_name: str = "",
         last_name: str = "",
@@ -48,9 +49,11 @@ class Database:
             "current_model": config.models["available_text_models"][0],
 
             "n_used_tokens": {},
+            "n_available_tokens": n_available_tokens,
 
             "n_generated_images": 0,
             "n_transcribed_seconds": 0.0  # voice message transcription
+
         }
 
         if not self.check_if_user_exists(user_id):

@@ -39,28 +39,30 @@ import openai_utils
 db = database.Database()
 logger = logging.getLogger(__name__)
 
+admin_name = config.admin
+
 user_semaphores = {}
 user_tasks = {}
 
+N_AVAILABLE_TOKENS = config.n_available_tokens
+
 HELP_MESSAGE = """Команды:
-⚪ /retry – Повторить последний запрос
-⚪ /new – Начать новый диалог
-⚪ /mode – Выбрать роль
-⚪ /settings – Настройки
-⚪ /balance – Баланс
-⚪ /help – Помощь
+    /retry – Повторить последний запрос
+    /new – Начать новый диалог
+    /mode – Выбрать роль
+    /settings – Настройки
+    /balance – Баланс
+    /help – Помощь
 
 🎨 Генерируйте изображения на основе текстовых подсказок в роли  <b>👩‍🎨 Художника</b>, команда /mode
 👥 Добавьте бота в <b>групповой чат</b>: /help_group_chat 
 
 🎤 Вы можете отправить <b>голосовое соообщение</b> вместо текста
-
-⚠️ Перевод, поддержка, обсуждение: https://openode.ru
 """
 
 HELP_GROUP_CHAT_MESSAGE = """Вы можете добавить бота в любой <b>групповой чат</b>, чтобы помочь и развлечь его участников!
 
-Инструкции (смотри <b>видео</b> ниже):
+Инструкции:
 1. Добавьте бота в групповой чат
 2. Сделайте его <b>администратором</b>, чтобы он мог видеть сообщения (все остальные права могут быть ограничены)
 3. Вы великолепны!
@@ -69,20 +71,53 @@ HELP_GROUP_CHAT_MESSAGE = """Вы можете добавить бота в лю
 Например: "{bot_username} напиши стихотворение о Телеграм"
 """
 
-
 def split_text_into_chunks(text, chunk_size):
     for i in range(0, len(text), chunk_size):
         yield text[i:i + chunk_size]
 
 
+async def user_is_admin (update: Update, context: CallbackContext, user: User):
+    if user.username == admin_name:
+        True
+    else:
+        False
+
+
+async def checking_user_token_limit (update: Update, context: CallbackContext, user: User):
+    token_limit = False
+
+    user_admin = await user_is_admin(update, context, user)
+    if user_admin == False:
+        total_n_used_tokens = 0
+
+        n_available_tokens_user = db.get_user_attribute(user.id, "n_available_tokens")
+        n_used_tokens_dict = db.get_user_attribute(user.id, "n_used_tokens")
+        #n_generated_images = db.get_user_attribute(user_id, "n_generated_images")
+
+        for model_key in sorted(n_used_tokens_dict.keys()):
+            n_input_tokens, n_output_tokens = n_used_tokens_dict[model_key]["n_input_tokens"], n_used_tokens_dict[model_key]["n_output_tokens"]
+            total_n_used_tokens += n_input_tokens + n_output_tokens
+
+        if total_n_used_tokens >= n_available_tokens_user:
+            await update.message.reply_text(f"Соррян, но допустимое количество токенов ({n_available_tokens_user}) закончилось...", parse_mode=ParseMode.HTML)
+            token_limit = True
+
+    return token_limit
+
 async def register_user_if_not_exists(update: Update, context: CallbackContext, user: User):
+    #Доступный лимит токенов
+    user_admin = await user_is_admin(update, context, user)
+    n_available_tokens = (-1 if user_admin else N_AVAILABLE_TOKENS)
+
     if not db.check_if_user_exists(user.id):
         db.add_new_user(
             user.id,
             update.message.chat_id,
+            n_available_tokens,
             username=user.username,
             first_name=user.first_name,
-            last_name= user.last_name
+            last_name= user.last_name,
+
         )
         db.start_new_dialog(user.id)
 
@@ -163,7 +198,7 @@ async def help_group_chat_handle(update: Update, context: CallbackContext):
      text = HELP_GROUP_CHAT_MESSAGE.format(bot_username="@" + context.bot.username)
 
      await update.message.reply_text(text, parse_mode=ParseMode.HTML)
-     await update.message.reply_video(config.help_group_chat_video_path)
+     # await update.message.reply_video(config.help_group_chat_video_path)
 
 
 async def retry_handle(update: Update, context: CallbackContext):
@@ -205,6 +240,10 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
 
     user_id = update.message.from_user.id
     chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
+
+    user_token_limit = await checking_user_token_limit(update, context, update.message.from_user)
+    if user_token_limit:
+        return
 
     if chat_mode == "artist":
         await generate_image_handle(update, context, message=message)
@@ -341,6 +380,10 @@ async def voice_message_handle(update: Update, context: CallbackContext):
     await register_user_if_not_exists(update, context, update.message.from_user)
     if await is_previous_message_not_answered_yet(update, context): return
 
+    user_token_limit = await checking_user_token_limit(update, context, update.message.from_user)
+    if user_token_limit:
+        return
+
     user_id = update.message.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
@@ -376,6 +419,10 @@ async def voice_message_handle(update: Update, context: CallbackContext):
 async def generate_image_handle(update: Update, context: CallbackContext, message=None):
     await register_user_if_not_exists(update, context, update.message.from_user)
     if await is_previous_message_not_answered_yet(update, context): return
+
+    user_token_limit = await checking_user_token_limit(update, context, update.message.from_user)
+    if user_token_limit:
+        return
 
     user_id = update.message.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
@@ -579,6 +626,7 @@ async def show_balance_handle(update: Update, context: CallbackContext):
 
     user_id = update.message.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
+    user_admin = await user_is_admin(update, context, update.message.from_user)
 
     # count total usage statistics
     total_n_spent_dollars = 0
@@ -587,6 +635,7 @@ async def show_balance_handle(update: Update, context: CallbackContext):
     n_used_tokens_dict = db.get_user_attribute(user_id, "n_used_tokens")
     n_generated_images = db.get_user_attribute(user_id, "n_generated_images")
     n_transcribed_seconds = db.get_user_attribute(user_id, "n_transcribed_seconds")
+    n_available_tokens_user = (-1 if user_admin else db.get_user_attribute(user_id, "n_available_tokens"))
 
     details_text = "🏷️ Детали:\n"
     for model_key in sorted(n_used_tokens_dict.keys()):
@@ -615,7 +664,7 @@ async def show_balance_handle(update: Update, context: CallbackContext):
 
 
     text = f"Вы потратили <b>{total_n_spent_dollars:.03f}$</b>\n"
-    text += f"Вы использовали <b>{total_n_used_tokens}</b> токен\n\n"
+    text += (f"Вы использовали <b>{total_n_used_tokens} токен из {n_available_tokens_user} доступных</b>\n\n" if n_available_tokens_user != -1 else f"Вы использовали <b>{total_n_used_tokens} токен</b>\n\n")
     text += details_text
 
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
